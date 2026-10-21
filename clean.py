@@ -56,19 +56,26 @@ df = df[~missing].copy()
 
 # %% [markdown]
 # ## 3. Label each location's level
-# Locations mix counties ("Carlow"), towns ("Carlow Town") and smaller areas ("Tullow, Carlow"), plus Dublin
-# postal districts. Counting rows by the location code's pattern shows how the codes are built.
+# Locations mix counties ("Carlow"), towns ("Carlow Town") and smaller areas ("Tullow, Carlow", "Artane, Dublin 5").
+# Counties are matched by name; other names without a comma are towns or Dublin postal districts.
 
 # %%
+COUNTIES = {"Carlow", "Cavan", "Clare", "Cork", "Donegal", "Dublin", "Galway", "Kerry", "Kildare", "Kilkenny",
+            "Laois", "Leitrim", "Limerick", "Longford", "Louth", "Mayo", "Meath", "Monaghan", "Offaly", "Roscommon",
+            "Sligo", "Tipperary", "Waterford", "Westmeath", "Wexford", "Wicklow"}
+
+
 def level(code, name):
     if name in ("Ireland", "State"):
         return "national"
-    return "county" if code.endswith("0000") else "area"
+    if name in COUNTIES:
+        return "county"
+    return "area" if "," in name else "town or district"
 
 df["location_level"] = [level(c, n) for c, n in zip(df["location_code"], df["location"])]
 print(df.groupby("location_level")["location"].nunique().to_string())
-for lv in ["national", "county", "area"]:
-    print(lv, sorted(df.loc[df.location_level == lv, "location"].unique())[:30])
+for lv in ["national", "county", "town or district"]:
+    print(lv, sorted(df.loc[df.location_level == lv, "location"].unique()))
 
 # %% [markdown]
 # ## 4. Mark the "all" and grouped categories
