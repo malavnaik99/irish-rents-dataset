@@ -65,16 +65,14 @@ COUNTIES = {"Carlow", "Cavan", "Clare", "Cork", "Donegal", "Dublin", "Galway", "
             "Sligo", "Tipperary", "Waterford", "Westmeath", "Wexford", "Wicklow"}
 
 
-def level(code, name):
-    if name in ("Ireland", "State"):
-        return "national"
+def level(name):
     if name in COUNTIES:
         return "county"
     return "area" if "," in name else "town or district"
 
-df["location_level"] = [level(c, n) for c, n in zip(df["location_code"], df["location"])]
+df["location_level"] = df["location"].map(level)
 print(df.groupby("location_level")["location"].nunique().to_string())
-for lv in ["national", "county", "town or district"]:
+for lv in ["county", "town or district"]:
     print(lv, sorted(df.loc[df.location_level == lv, "location"].unique()))
 
 # %% [markdown]
@@ -106,7 +104,7 @@ print(f"{len(df):,} rows, {df.location.nunique()} locations, {df.period.min()}â€
 
 # %%
 allrows = df[df.is_total_bedrooms & df.is_total_property_type & df.bedrooms.eq("All bedrooms")]
-pivot = allrows[allrows.location_level.isin(["national", "county"])].pivot_table(
+pivot = allrows[allrows.location_level.eq("county")].pivot_table(
     index="period", columns="location", values="rent_eur")
-show = [c for c in ["Ireland", "Dublin", "Cork", "Galway", "Leitrim"] if c in pivot]
+show = ["Dublin", "Cork", "Galway", "Leitrim"]
 print(pivot[show].iloc[[0, len(pivot) // 2, -1]].round(0).to_string())
