@@ -113,7 +113,6 @@ latest, first = county.index.max(), county.index.min()
 ten_years_ago = f"{int(latest[:4]) - 10}{latest[4:]}"
 change = (county.loc[latest] / county.loc[ten_years_ago] - 1).sort_values(ascending=False)
 dublin_low = county["Dublin"].idxmin()
-districts = allrows[allrows.location.str.fullmatch(r"Dublin \d+W?") & allrows.period.eq(latest)].set_index("location")["rent_eur"]
 summary = {
     "latest": latest, "first": first, "ten_years_ago": ten_years_ago,
     "series": {c: county[c].round(0).dropna().to_dict() for c in ["Dublin", "Cork", "Galway", "Limerick", "Leitrim"]},
@@ -122,8 +121,6 @@ summary = {
     "change_10y_top5": change.head(5).round(3).to_dict(),
     "change_10y_bottom5": change.tail(5).round(3).to_dict(),
     "dublin_low": [dublin_low, round(county.loc[dublin_low, "Dublin"])],
-    "districts_latest_top3": districts.sort_values(ascending=False).head(3).round(0).to_dict(),
-    "districts_latest_bottom3": districts.sort_values().head(3).round(0).to_dict(),
     "counties_doubled_10y": int((change >= 1).sum()),
 }
 json.dump(summary, open("out/summary.json", "w"), indent=1)
