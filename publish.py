@@ -1,4 +1,4 @@
-"""Publishes the cleaned table (out/) to Hugging Face and Kaggle, private until Malav approves.
+"""Publishes the cleaned table (out/) to Hugging Face and Kaggle (public, approved by Malav).
 The data card's numbers are computed from the file itself, so they always match it."""
 import json
 import os
@@ -57,7 +57,8 @@ if __name__ == "__main__":
     open("pub/README.md", "w").write(CARD)
 
     api = HfApi()
-    api.create_repo(HF_REPO, repo_type="dataset", private=True, exist_ok=True)  # public after Malav reviews it
+    api.create_repo(HF_REPO, repo_type="dataset", exist_ok=True)
+    api.update_repo_settings(HF_REPO, repo_type="dataset", private=False)  # Malav approved publishing on 21 Oct 2026
     api.upload_folder(repo_id=HF_REPO, repo_type="dataset", folder_path="pub")
     print(f"https://huggingface.co/datasets/{HF_REPO}")
 
