@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 
 import pandas as pd
 from huggingface_hub import HfApi
@@ -94,5 +95,11 @@ if __name__ == "__main__":
         meta = json.load(open("pub/dataset-metadata.json"))
         meta["licenses"] = current.get("licenses") or meta["licenses"]
         json.dump(meta, open("pub/dataset-metadata.json", "w"), indent=1)
-        subprocess.run(["kaggle", "datasets", "metadata", "--update", "-p", "pub", KAGGLE_ID], check=True)
+        for _ in range(30):  # updating while the new version is still processing times out on Kaggle's side
+            status = subprocess.run(["kaggle", "datasets", "status", KAGGLE_ID], capture_output=True, text=True).stdout
+            if "ready" in status.lower():
+                break
+            time.sleep(10)
+        if subprocess.run(["kaggle", "datasets", "metadata", "--update", "-p", "pub", KAGGLE_ID]).returncode:
+            print("WARNING: Kaggle description/tags not updated this run; the data itself was published.")
     print(f"https://www.kaggle.com/datasets/{KAGGLE_ID}")
