@@ -1,8 +1,0 @@
-name: Explore rent tables
-on: workflow_dispatch
-jobs:
-  run:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pip install -q pandas && python explore.py

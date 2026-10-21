@@ -1,0 +1,12 @@
+# Downloads the official RTB rent table from the CSO and cleans it (clean.py), then prints a summary.
+name: Build dataset
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -q pandas pyarrow
+      - run: python clean.py
