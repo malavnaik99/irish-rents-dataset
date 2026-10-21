@@ -100,11 +100,31 @@ df.to_csv("out/irish_rents_rtb.csv", index=False)
 print(f"{len(df):,} rows, {df.location.nunique()} locations, {df.period.min()}–{df.period.max()}")
 
 # %% [markdown]
-# ## 6. A first look: average rent, all homes
+# ## 6. A first look: average rent for all homes, by county
+# "All bedrooms" and "All property types" together give one average per county and half-year.
+# Rents are in euro of the day (not adjusted for inflation).
 
 # %%
-allrows = df[df.is_total_bedrooms & df.is_total_property_type & df.bedrooms.eq("All bedrooms")]
-pivot = allrows[allrows.location_level.eq("county")].pivot_table(
-    index="period", columns="location", values="rent_eur")
-show = ["Dublin", "Cork", "Galway", "Leitrim"]
-print(pivot[show].iloc[[0, len(pivot) // 2, -1]].round(0).to_string())
+import json
+
+allrows = df[df.bedrooms.eq("All bedrooms") & df.is_total_property_type]
+county = allrows[allrows.location_level.eq("county")].pivot_table(index="period", columns="location", values="rent_eur")
+latest, first = county.index.max(), county.index.min()
+ten_years_ago = f"{int(latest[:4]) - 10}{latest[4:]}"
+change = (county.loc[latest] / county.loc[ten_years_ago] - 1).sort_values(ascending=False)
+dublin_low = county["Dublin"].idxmin()
+districts = allrows[allrows.location.str.fullmatch(r"Dublin \d+W?") & allrows.period.eq(latest)].set_index("location")["rent_eur"]
+summary = {
+    "latest": latest, "first": first, "ten_years_ago": ten_years_ago,
+    "series": {c: county[c].round(0).dropna().to_dict() for c in ["Dublin", "Cork", "Galway", "Limerick", "Leitrim"]},
+    "latest_top5": county.loc[latest].sort_values(ascending=False).head(5).round(0).to_dict(),
+    "latest_bottom5": county.loc[latest].sort_values().head(5).round(0).to_dict(),
+    "change_10y_top5": change.head(5).round(3).to_dict(),
+    "change_10y_bottom5": change.tail(5).round(3).to_dict(),
+    "dublin_low": [dublin_low, round(county.loc[dublin_low, "Dublin"])],
+    "districts_latest_top3": districts.sort_values(ascending=False).head(3).round(0).to_dict(),
+    "districts_latest_bottom3": districts.sort_values().head(3).round(0).to_dict(),
+    "counties_doubled_10y": int((change >= 1).sum()),
+}
+json.dump(summary, open("out/summary.json", "w"), indent=1)
+print(json.dumps(summary, indent=1))
