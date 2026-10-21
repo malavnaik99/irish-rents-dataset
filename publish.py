@@ -50,6 +50,16 @@ These are averages for **new** tenancies registered in each half-year, not what 
 tenancies, so their averages move a lot. Files: `irish_rents_rtb.parquet` and `irish_rents_rtb.csv` (same data).
 """
 
+FIELDS = [{"name": n, "description": d} for n, d in [
+    ("period", "Half-year, e.g. 2025H2 (July-December)"), ("year", "Year"), ("half", "1 = January-June, 2 = July-December"),
+    ("period_start", "First day of the half-year"), ("location", "Area name as published"),
+    ("location_code", "CSO location code"), ("location_level", "county, town or district, or area"),
+    ("bedrooms", "Number of bedrooms, or a total/grouped category"), ("property_type", "Property type, or All property types"),
+    ("is_total_bedrooms", "True for All bedrooms, 1 to 2 bed and 1 to 3 bed"),
+    ("is_total_property_type", "True for All property types"),
+    ("rent_eur", "Average monthly rent of new tenancies, euro, not inflation-adjusted")]]
+
+
 if __name__ == "__main__":
     os.makedirs("pub", exist_ok=True)
     for f in ["irish_rents_rtb.parquet", "irish_rents_rtb.csv"]:
@@ -65,10 +75,16 @@ if __name__ == "__main__":
     os.remove("pub/README.md")  # Kaggle takes the card as the description instead
     json.dump({"title": "Irish Rents (RTB) 2008-2025, cleaned", "id": KAGGLE_ID,
                "subtitle": "Average rent of new tenancies by area, bedrooms and property type",
-               "licenses": [{"name": "CC-BY-4.0"}], "description": CARD.split("---", 2)[2].strip()},
+               "licenses": [{"name": "CC-BY-4.0"}], "description": CARD.split("---", 2)[2].strip(),
+               "keywords": ["housing", "real estate", "europe", "economics", "data cleaning"],
+               "resources": [{"path": f, "description": f"Cleaned RTB average rents, one row per half-year, location, "
+                              f"bedrooms and property type ({fmt}).", "schema": {"fields": FIELDS}}
+                             for f, fmt in [("irish_rents_rtb.csv", "CSV"), ("irish_rents_rtb.parquet", "Parquet")]]},
               open("pub/dataset-metadata.json", "w"), indent=1)
     exists = subprocess.run(["kaggle", "datasets", "status", KAGGLE_ID], capture_output=True, text=True).returncode == 0
     cmd = ["kaggle", "datasets", "version", "-p", "pub", "-m", "Rebuilt from CSO RIH02"] if exists else \
           ["kaggle", "datasets", "create", "-p", "pub"]  # create is private by default
     subprocess.run(cmd, check=True)
+    if exists:  # versioning updates files only; this updates the title, tags and column descriptions
+        subprocess.run(["kaggle", "datasets", "metadata", "--update", "-p", "pub", KAGGLE_ID], check=True)
     print(f"https://www.kaggle.com/datasets/{KAGGLE_ID}")
