@@ -86,5 +86,13 @@ if __name__ == "__main__":
           ["kaggle", "datasets", "create", "-p", "pub"]  # create is private by default
     subprocess.run(cmd, check=True)
     if exists:  # versioning updates files only; this updates the title, tags and column descriptions
+        # The update call wants the licence name exactly as Kaggle stores it, so reuse the current one.
+        subprocess.run(["kaggle", "datasets", "metadata", "-p", "meta", KAGGLE_ID], check=True)
+        current = json.load(open("meta/dataset-metadata.json"))
+        current = current.get("info") or current
+        print("licence as stored by Kaggle:", current.get("licenses"))
+        meta = json.load(open("pub/dataset-metadata.json"))
+        meta["licenses"] = current.get("licenses") or meta["licenses"]
+        json.dump(meta, open("pub/dataset-metadata.json", "w"), indent=1)
         subprocess.run(["kaggle", "datasets", "metadata", "--update", "-p", "pub", KAGGLE_ID], check=True)
     print(f"https://www.kaggle.com/datasets/{KAGGLE_ID}")
